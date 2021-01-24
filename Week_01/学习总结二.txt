@@ -1,0 +1,172 @@
+分析Queue和Prioriy Queue的源码
+1、Queue是先进先出的，它是一个接口，如果一个类只是由抽象方法和全局长量组成，这种情况下会将其定义为借口
+
+public interface Queue<E> extends Collection<E> {
+    // 添加元素，成功返回true，失败报异常
+    boolean add(E e);
+    // 添加元素，成功返回true，失败返回false
+    boolean offer(E e);
+    // 取出并删除队头，如果队列空，则报异常
+    E remove();
+    // 取出并删除队头，如果队列空，则返回null
+    E poll();
+    // 取出不删除队头，如果队列空，则报异常
+    E element();
+    // 取出不删除队头，如果队列空，则返回null
+    E peek();
+}
+
+2.PriorityQueue是什么？它是一个优先队列，取出元素时候按照优先级取出，它内部实际上是一个用数组写的小顶堆
+
+public class PriorityQueue<E> extends AbstractQueue<E>implements java.io.Serializable {
+    // 默认容量是11
+    private static final int DEFAULT_INITIAL_CAPACITY = 11;
+    //使用数组来存储元素
+    transient Object[] queue; // non-private to simplify nested class access  
+    //队列元素大小
+    private int size = 0;
+    //通过这个比较器实现优先级队列
+    private final Comparator<? super E> comparator;
+    }
+
+2.1它一共有6个构造函数
+
+    //使用默认的容量（11）来构造一个空的优先级队列，使用元素的自然顺序进行排序（此时元素必须实现comparable接口）
+    public PriorityQueue() {
+        this(DEFAULT_INITIAL_CAPACITY, null);
+    }
+
+    //使用指定容量来构造一个空的优先级队列，使用元素的自然顺序进行排序（此时元素必须实现comparable接口）
+    // 但如果指定的容量小于1则会抛出异常
+    public PriorityQueue(int initialCapacity) {
+        this(initialCapacity, null);
+    }
+
+    //使用默认的容量（11）构造一个优先级队列，使用指定的比较器进行排序
+    public PriorityQueue(Comparator<? super E> comparator) {
+        this(DEFAULT_INITIAL_CAPACITY, comparator);
+    }
+
+    //使用指定容量创建一个优先级队列，并使用指定比较器进行排序。
+    //但如果指定的容量小于1则会抛出异常
+    public PriorityQueue(int initialCapacity,
+                         Comparator<? super E> comparator) {
+        if (initialCapacity < 1)
+            throw new IllegalArgumentException();
+        this.queue = new Object[initialCapacity];
+        this.comparator = comparator;
+    }
+
+    //使用指定集合的所有元素构造一个优先级队列，
+    //如果该集合为SortedSet或者PriorityQueue类型，则会使用相同的顺序进行排序，
+    //否则，将使用元素的自然排序（此时元素必须实现comparable接口），否则会抛出异常
+    //并且集合中不能有null元素，否则会抛出异常
+    @SuppressWarnings("unchecked")
+    public PriorityQueue(Collection<? extends E> c) {
+        if (c instanceof SortedSet<?>) {
+            SortedSet<? extends E> ss = (SortedSet<? extends E>) c;
+            this.comparator = (Comparator<? super E>) ss.comparator();
+            initElementsFromCollection(ss);
+        }
+        else if (c instanceof PriorityQueue<?>) {
+            PriorityQueue<? extends E> pq = (PriorityQueue<? extends E>) c;
+            this.comparator = (Comparator<? super E>) pq.comparator();
+            initFromPriorityQueue(pq);
+        }
+        else {
+            this.comparator = null;
+            initFromCollection(c);
+        }
+    }
+
+    // 使用指定的优先级队列中所有元素来构造一个新的优先级队列.  将使用原有顺序进行排序。
+    @SuppressWarnings("unchecked")
+    public PriorityQueue(PriorityQueue<? extends E> c) {
+        this.comparator = (Comparator<? super E>) c.comparator();
+        initFromPriorityQueue(c);
+    }
+
+    //根据指定的有序集合创建一个优先级队列，将使用原有顺序进行排序
+    @SuppressWarnings("unchecked")
+    public PriorityQueue(SortedSet<? extends E> c) {
+        this.comparator = (Comparator<? super E>) c.comparator();
+        initElementsFromCollection(c);
+    }
+    
+2.2常见的方法
+
+//添加一个元素
+public boolean add(E e) {
+    return offer(e);
+}
+ 
+ 
+public boolean offer(E e) {
+    if (e == null)
+        throw new NullPointerException();
+//修改版本+1
+    modCount++;
+//记录当前队列元素的个数
+    int i = size;
+//如果当前元素个数大于等于队列底层数组的长度，则进行扩容
+    if (i >= queue.length)
+        grow(i + 1);
+//元素个数+1
+    size = i + 1;
+//如果队列中没有元素，则将元素e直接添加到根
+    if (i == 0)
+        queue[0] = e;
+//否则调用siftUp方法，将元素添加到尾部，进行上移判断
+    else
+        siftUp(i, e);
+    return true;
+}
+　　
+
+1） 扩容操作
+private void grow(int minCapacity) {
+    int oldCapacity = queue.length;
+    // 如果当前队列小于64，则扩容到2倍，否则扩容到1.5倍
+    int newCapacity = oldCapacity + ((oldCapacity < 64) ?
+                                     (oldCapacity + 2) :
+                                     (oldCapacity >> 1));
+    // 如果扩容后超出了int范围，则将newCapacity赋值为Integer.Max_VALUE
+    if (newCapacity - MAX_ARRAY_SIZE > 0)
+        newCapacity = hugeCapacity(minCapacity);
+    //数组copy进行扩容
+    queue = Arrays.copyOf(queue, newCapacity);
+}
+　　
+
+2）上移操作
+//上移，x表示新插入元素，k表示新插入元素在数组中的位置
+private void siftUp(int k, E x) {
+//根据比较器是否为空，选择不同的上移操作方法
+    if (comparator != null)
+        siftUpUsingComparator(k, x);
+    else
+        siftUpComparable(k, x);
+}
+ 
+//比较器为空时，调用此方法进行上移操作
+private void siftUpComparable(int k, E x) {
+    Comparable<? super E> key = (Comparable<? super E>) x;
+    //k>0表示判断k不是根的情况下，也就是元素x有父节点。
+    while (k > 0) {
+    //计算元素x的父节点位置(n-1)/2
+        int parent = (k - 1) >>> 1;
+    //取出x的父元素e
+        Object e = queue[parent];
+    //如果新增的元素k比其父元素e大，则不需要“上移”，跳出循环结束
+        if (key.compareTo((E) e) >= 0)
+            break;
+    //x比父元素小，则需要进行“上移”
+    //交换元素x和父节点e的位置
+        queue[k] = e;
+    //将新插入元素位置k指向父节点位置，进行下一次循环
+        k = parent;
+ 
+    }
+    //找到新增元素x的合适位置k之后进行赋值
+    queue[k] = key;
+}
