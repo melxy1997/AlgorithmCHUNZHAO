@@ -12,7 +12,7 @@ var maxProfit = function(prices) {
 
     for (let i=1; i<n; i++) {
         // console.log(i,dp)
-        dp[i][0] = Math.max(dp[i-1][0], dp[i][1] + prices[i]) //今天不持有的利润=昨天就没有的利润or昨天股票卖了赚钱
+        dp[i][0] = Math.max(dp[i-1][0], dp[i][1] + prices[i]) // 今天不持有的利润=昨天就没有的利润or昨天股票卖了赚钱
         dp[i][1] = Math.max(dp[i-1][1], dp[i][0] - prices[i])
     }
     return dp[n-1][0]
