@@ -2,7 +2,8 @@
  * 64. 最小路径和
  * https://leetcode-cn.com/problems/minimum-path-sum/
  */
-var minPathSum = function(grid) {
+
+let minPathSum = function(grid) {
     const m = grid.length
     const n = grid[0].length
     // 这个二维空数组的创建方式 我有点难受
@@ -11,7 +12,7 @@ var minPathSum = function(grid) {
         dp.push(new Array(n).fill(0))
     }
 
-    // determ
+    // determ. base case
     dp[0][0] = grid[0][0];
     for (let j = 1; j < n; j++) { 
         dp[0][j] = dp[0][j-1] + grid[0][j]
@@ -20,10 +21,10 @@ var minPathSum = function(grid) {
         dp[i][0] = dp[i-1][0] + grid[i][0] 
     }
 
-    // calc
+    // calc.注意0,0已经被填好了，要从1开始计算
     for (let i = 1; i < m; i++) {
         for (let j = 1; j < n; j++) {
-            dp[i][j] = Math.min(dp[i-1][j], dp[i][j-1]) + grid[i][j]//横走，竖走
+            dp[i][j] = Math.min(dp[i-1][j], dp[i][j-1]) + grid[i][j]//横走 竖走中都+grid了，不如提到外面
         }
     }
 
