@@ -6,7 +6,8 @@
 let minPathSum = function(grid) {
     const m = grid.length
     const n = grid[0].length
-    // 这个二维空数组的创建方式 我有点难受
+
+    // 这个二维0数组的创建方式 可能不太优雅，没办法
     let dp = []
     for(let i=0; i<m; i++){
         dp.push(new Array(n).fill(0))
@@ -21,7 +22,7 @@ let minPathSum = function(grid) {
         dp[i][0] = dp[i-1][0] + grid[i][0] 
     }
 
-    // calc.注意0,0已经被填好了，要从1开始计算
+    // calc. 注意0,0已经被填好了，要从1开始计算
     for (let i = 1; i < m; i++) {
         for (let j = 1; j < n; j++) {
             dp[i][j] = Math.min(dp[i-1][j], dp[i][j-1]) + grid[i][j]//横走 竖走中都+grid了，不如提到外面

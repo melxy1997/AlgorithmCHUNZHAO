@@ -10,6 +10,7 @@
 
 let longestValidParentheses = function (s) {
     const n = s.length
+    
     let dp = Array(n).fill(0);
 
     for (let i = 1; i < n; i++) {
